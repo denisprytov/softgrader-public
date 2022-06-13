@@ -1,0 +1,77 @@
+version: "3.9"
+services:
+
+    php:
+        build:
+            context: ./php
+            dockerfile: Dockerfile
+        container_name: softgrader_fpm
+        restart: unless-stopped
+        tty: true
+        volumes:
+            - ../softgrader:/var/www/softgrader
+            - ./etc/php/conf.d/my-php.ini:/usr/local/etc/php/conf.d/my-php.ini
+        environment:
+            PHP_DB_HOST: ${PHP_DB_HOST}
+            PHP_DB_USER: ${PHP_DB_USER}
+            PHP_DB_PASS: ${PHP_DB_PASS}
+            PHP_DB_NAME: ${PHP_DB_NAME}
+            PHP_DB_PORT: ${PHP_DB_PORT}
+            TESTER_HOST: ${TESTER_HOST}
+            TESTER_PORT: ${TESTER_PORT}
+        working_dir: /var/www/softgrader
+        networks:
+            - sg_net
+    nginx:
+        image: nginx
+        container_name: softgrader_nginx
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "80:80"
+        volumes:
+            - ../softgrader:/var/www/softgrader
+            - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./logs/nginx:/var/log/nginx
+        networks:
+            - sg_net
+    db:
+        image: mysql:latest
+        container_name: softgrader_mysql
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "3306:3306"
+        volumes:
+            - ../softgrader:/var/www/softgrader
+            - ./etc/mysql/my-local.cnf:/etc/mysql/conf.d/my-local.cnf
+            - ${MYSQL_DATA_PATH}:/var/lib/mysql
+        working_dir: /var/www/softgrader
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        entrypoint: >
+            bash -c "chmod 644 /etc/mysql/conf.d/my-local.cnf
+            && docker-entrypoint.sh mysqld"
+        networks:
+            - sg_net
+    skeema:
+        build:
+            context: ./skeema
+            dockerfile: Dockerfile
+        container_name: softgrader_skeema
+        tty: true
+        volumes:
+            - ../softgrader/db_scheme:/db_scheme
+        networks:
+            - sg_net
+    memcached:
+        image: memcached:latest
+        container_name: softgrader_memcached
+        tty: true
+        ports:
+            - "11211:11211"
+        networks:
+            - sg_net
+
+networks:
+    sg_net:

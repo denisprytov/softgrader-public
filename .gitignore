@@ -1,0 +1,8 @@
+
+*.swp
+
+*.db
+
+logs/nginx/*
+
+.idea/

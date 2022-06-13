@@ -1,0 +1,7 @@
+parameters:
+    level: 5
+    scanDirectories:
+        - ../../application
+    ignoreErrors:
+        - message: '#Variable [\$\_A-Za-z0-9]* might not be defined.#'
+          path: ../../application/*

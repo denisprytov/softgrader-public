@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: softgrader
+spec:
+  selector:
+    matchLabels:
+      app: softgrader
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: softgrader
+    spec:
+      volumes:
+        - name: shared-files
+          emptyDir: {}
+        - name: nginx-config-volume
+          configMap:
+            name: nginx-config
+      containers:
+        - name: softgrader-php
+          image: docker-hub-repository-name:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: shared-files
+              mountPath: /softgrader
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "cp -r /var/www/softgrader/. /softgrader"]
+        - name: softgrader-nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: shared-files
+              mountPath: /var/www/softgrader
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      imagePullSecrets:
+        - name: myregistrykey
